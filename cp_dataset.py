@@ -27,9 +27,12 @@ class CPDataset(data.Dataset):
         self.fine_width = opt.fine_width
         self.radius = opt.radius
         self.data_path = osp.join(opt.dataroot, opt.datamode)
-        self.transform = transforms.Compose([
+        self.transform_rgb = transforms.Compose([
             transforms.ToTensor(),
             transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])
+        self.transform_grayscale = transforms.Compose([
+            transforms.ToTensor(),
+            transforms.Normalize((0.5,), (0.5,))])
 
         # load data list
         im_names = []
@@ -56,7 +59,7 @@ class CPDataset(data.Dataset):
             c = Image.open(osp.join(self.data_path, 'warp-cloth', im_name))    # c_name, if that is used when saved
             cm = Image.open(osp.join(self.data_path, 'warp-mask', im_name)).convert('L')    # c_name, if that is used when saved
 
-        c = self.transform(c)  # [-1,1]
+        c = self.transform_rgb(c)  # [-1,1]
         cm_array = np.array(cm)
         cm_array = (cm_array >= 128).astype(np.float32)
         cm = torch.from_numpy(cm_array)  # [0,1]
@@ -64,7 +67,7 @@ class CPDataset(data.Dataset):
 
         # person image
         im = Image.open(osp.join(self.data_path, 'image', im_name))
-        im = self.transform(im)  # [-1,1]
+        im = self.transform_rgb(im)  # [-1,1]
 
         """
         LIP labels
@@ -135,8 +138,8 @@ class CPDataset(data.Dataset):
             (self.fine_width, self.fine_height), Image.BILINEAR)
         parse_shape_ori = parse_shape_ori.resize(
             (self.fine_width, self.fine_height), Image.BILINEAR)
-        shape_ori = self.transform(parse_shape_ori)  # [-1,1]
-        shape = self.transform(parse_shape)  # [-1,1]
+        shape_ori = self.transform_grayscale(parse_shape_ori)  # [-1,1]
+        shape = self.transform_grayscale(parse_shape)  # [-1,1]
         phead = torch.from_numpy(parse_head)  # [0,1]
         # phand = torch.from_numpy(parse_hand)  # [0,1]
         pcm = torch.from_numpy(parse_cloth)  # [0,1]
@@ -168,18 +171,18 @@ class CPDataset(data.Dataset):
                                 r, pointy+r), 'white', 'white')
                 pose_draw.rectangle(
                     (pointx-r, pointy-r, pointx+r, pointy+r), 'white', 'white')
-            one_map = self.transform(one_map)
+            one_map = self.transform_grayscale(one_map)
             pose_map[i] = one_map[0]
 
         # just for visualization
-        im_pose = self.transform(im_pose)
+        im_pose = self.transform_grayscale(im_pose)
 
         # cloth-agnostic representation
         agnostic = torch.cat([shape, im_h, pose_map], 0)
 
         if self.stage == 'GMM':
             im_g = Image.open('grid.png')
-            im_g = self.transform(im_g)
+            im_g = self.transform_rgb(im_g)
         else:
             im_g = ''
 

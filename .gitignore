@@ -5,9 +5,12 @@ result/
 data/train/*
 data/test/*
 log/*
-*.sh
+# *.sh
 result/*
 .idea/
 .idea/*
 *.pyc
 *.zip
+
+venv/*
+.vscode/*

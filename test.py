@@ -53,11 +53,13 @@ def get_opt():
                         help='shuffle input data')
 
     opt = parser.parse_args()
+    opt.device = 'cuda:0' if torch.cuda.is_available() else 'cpu'
+    opt.use_cuda = True if torch.cuda.is_available() else False
     return opt
 
 
 def test_gmm(opt, test_loader, model, board):
-    model.cuda()
+    model.to(opt.device)
     model.eval()
 
     base_name = os.path.basename(opt.checkpoint)
@@ -85,15 +87,15 @@ def test_gmm(opt, test_loader, model, board):
 
         c_names = inputs['c_name']
         im_names = inputs['im_name']
-        im = inputs['image'].cuda()
-        im_pose = inputs['pose_image'].cuda()
-        im_h = inputs['head'].cuda()
-        shape = inputs['shape'].cuda()
-        agnostic = inputs['agnostic'].cuda()
-        c = inputs['cloth'].cuda()
-        cm = inputs['cloth_mask'].cuda()
-        im_c = inputs['parse_cloth'].cuda()
-        im_g = inputs['grid_image'].cuda()
+        im = inputs['image'].to(opt.device)
+        im_pose = inputs['pose_image'].to(opt.device)
+        im_h = inputs['head'].to(opt.device)
+        shape = inputs['shape'].to(opt.device)
+        agnostic = inputs['agnostic'].to(opt.device)
+        c = inputs['cloth'].to(opt.device)
+        cm = inputs['cloth_mask'].to(opt.device)
+        im_c = inputs['parse_cloth'].to(opt.device)
+        im_g = inputs['grid_image'].to(opt.device)
         shape_ori = inputs['shape_ori']  # original body shape without blurring
 
         grid, theta = model(agnostic, cm)
@@ -110,7 +112,7 @@ def test_gmm(opt, test_loader, model, board):
         # save_images(warped_mask*2-1, c_names, warp_mask_dir)
         save_images(warped_cloth, im_names, warp_cloth_dir)
         save_images(warped_mask * 2 - 1, im_names, warp_mask_dir)
-        save_images(shape_ori.cuda() * 0.2 + warped_cloth *
+        save_images(shape_ori.to(opt.device) * 0.2 + warped_cloth *
                     0.8, im_names, result_dir1)
         save_images(warped_grid, im_names, warped_grid_dir)
         save_images(overlay, im_names, overlayed_TPS_dir)
@@ -122,7 +124,7 @@ def test_gmm(opt, test_loader, model, board):
 
 
 def test_tom(opt, test_loader, model, board):
-    model.cuda()
+    model.to(opt.device)
     model.eval()
 
     base_name = os.path.basename(opt.checkpoint)
@@ -154,14 +156,14 @@ def test_tom(opt, test_loader, model, board):
         iter_start_time = time.time()
 
         im_names = inputs['im_name']
-        im = inputs['image'].cuda()
+        im = inputs['image'].to(opt.device)
         im_pose = inputs['pose_image']
         im_h = inputs['head']
         shape = inputs['shape']
 
-        agnostic = inputs['agnostic'].cuda()
-        c = inputs['cloth'].cuda()
-        cm = inputs['cloth_mask'].cuda()
+        agnostic = inputs['agnostic'].to(opt.device)
+        c = inputs['cloth'].to(opt.device)
+        cm = inputs['cloth_mask'].to(opt.device)
 
         # outputs = model(torch.cat([agnostic, c], 1))  # CP-VTON
         outputs = model(torch.cat([agnostic, c, cm], 1))  # CP-VTON+

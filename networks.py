@@ -132,7 +132,7 @@ class FeatureRegression(nn.Module):
 
     def forward(self, x):
         x = self.conv(x)
-        x = x.view(x.size(0), -1)
+        x = x.contiguous().view(x.size(0), -1)
         x = self.linear(x)
         x = self.tanh(x)
         return x
@@ -510,9 +510,9 @@ class GMM(nn.Module):
         self.l2norm = FeatureL2Norm()
         self.correlation = FeatureCorrelation()
         self.regression = FeatureRegression(
-            input_nc=192, output_dim=2*opt.grid_size**2, use_cuda=True)
+            input_nc=192, output_dim=2*opt.grid_size**2, use_cuda=opt.use_cuda)
         self.gridGen = TpsGridGen(
-            opt.fine_height, opt.fine_width, use_cuda=True, grid_size=opt.grid_size)
+            opt.fine_height, opt.fine_width, use_cuda=opt.use_cuda, grid_size=opt.grid_size)
 
     def forward(self, inputA, inputB):
         featureA = self.extractionA(inputA)
@@ -531,11 +531,11 @@ def save_checkpoint(model, save_path):
         os.makedirs(os.path.dirname(save_path))
 
     torch.save(model.cpu().state_dict(), save_path)
-    model.cuda()
+    # model.to(device)
 
 
 def load_checkpoint(model, checkpoint_path):
     if not os.path.exists(checkpoint_path):
         return
     model.load_state_dict(torch.load(checkpoint_path))
-    model.cuda()
+    # model.to(device)
